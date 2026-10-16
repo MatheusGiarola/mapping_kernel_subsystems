@@ -15,24 +15,23 @@ process_line () {
 
     dir=$(dirname "$line")
     nome=$(basename "$line")
-    subsistemas=$(perl "$GET_MAINTAINER" \
+    json=$(perl "$GET_MAINTAINER" \
                         --nogit \
                         --nogit-fallback \
                         --nom \
                         --nor \
                         --separator=";" \
-                        --noemail    \
                         --subsystem \
-                        --nol \
+                        --json \
                         -f "$line")
 
-    mailing_list=$(perl "$GET_MAINTAINER" \
-                        --nogit \
-                        --nogit-fallback \
-                        --nom \
-                        --nor  \
-                        --separator=";" \
-                        -f "$line")
+    #get the subsystems field
+    subsistemas=$(echo $json | \
+                    jq -r '[.subsystem.[] ] | join(";")')
+
+    #filter json "maintainers" field to get mailing lists
+    mailing_list=$(echo $json | \
+                    jq -r '[.maintainers.[] | select(.role | contains("open list")) | .email] | join(";")')
 
     echo "\"$dir\",\"$nome\",\"$subsistemas\",\"$mailing_list\""
 }
