@@ -5,10 +5,12 @@ BASE_DIR="$HOME/Documentos/ic/mapping_kernel_subsystems"
 KERNEL_DIR="$BASE_DIR/linux/" #path to kernel files
 KERNEL_VERSION=$(make -s -C "$KERNEL_DIR" kernelversion)
 CSV_FILE="$BASE_DIR/resultados_${KERNEL_VERSION}.csv"
+export ERR_LOG="$BASE_DIR/err.log"
 export GET_MAINTAINER="$KERNEL_DIR/scripts/get_maintainer.pl"
 
 cd "$KERNEL_DIR"
 echo "Diretorio,Arquivo,Subsistemas,Listas de Email,Relação de Listas e Subsistemas" > "$CSV_FILE"
+: > "$ERR_LOG"
 
 #run the get maintainer script in a received file
 process_line () {
@@ -24,7 +26,8 @@ process_line () {
                         --separator=";" \
                         --subsystem \
                         --json \
-                        -f "$line")
+                        -f "$line" \
+                        2>> "$ERR_LOG") #redirect errors and warnings to a file
 
     #get the subsystems field in json format
     subsystems=$(echo "$json" | \
