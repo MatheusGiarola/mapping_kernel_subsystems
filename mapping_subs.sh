@@ -40,7 +40,7 @@ export GET_MAINTAINER="$KERNEL_DIR/scripts/get_maintainer.pl"
 
 cd "$KERNEL_DIR"
 
-echo "directory,file,subsystem,mailing_list,list_subsystem" > "$CSV_FILE"
+echo "directory,file,subsystem,mailing_list,maintainer,reviewer,list_subsystem" > "$CSV_FILE"
 : > "$ERR_LOG"
 
 #run the get maintainer script in a received file
@@ -52,8 +52,6 @@ process_line () {
     json=$(perl "$GET_MAINTAINER" \
                         --nogit \
                         --nogit-fallback \
-                        --nom \
-                        --nor \
                         --separator=";" \
                         --subsystem \
                         --json \
@@ -66,11 +64,19 @@ process_line () {
 
     #filter json "maintainers" field to get mailing lists in json format
     mailing_list=$(echo "$json" | \
-                    jq -r -c '[.maintainers.[] | select(.role | contains("open list")) | .email]')
+                    jq -r -c '[.maintainers.[] | select(.role | startswith("open list")) | .email]')
+
+    #filter json "maintainers" field to get maintainers in json format
+    maintainer=$(echo "$json" | \
+                        jq -r -c '[.maintainers.[] | select(.role | startswith("maintainer"))]')
+
+    #filter json "maintainers" field to get reviewers in json format
+    reviewer=$(echo "$json" | \
+                        jq -r -c '[.maintainers.[] | select(.role | startswith("reviewer"))]')
 
     #filter json "maintainers" field to get subsystems and mailing lists relationships in json format
     lists_relations=$(echo "$json" | \
-                        jq -r -c '[.maintainers.[] | select(.role | contains("open list")) | {email, role}]')
+                        jq -r -c '[.maintainers.[] | select(.role | startswith("open list")) | {email, role}]')
 
     #format the columns to the csv file
     final_line=$(jq -rn \
@@ -78,8 +84,10 @@ process_line () {
                     --arg name "$name" \
                     --arg subs "$subsystems" \
                     --arg ml "$mailing_list" \
+                    --arg maintainers "$maintainer" \
+                    --arg reviewers "$reviewer" \
                     --arg list_r "$lists_relations" \
-                    '[$dir, $name, $subs, $ml, $list_r] | @csv'
+                    '[$dir, $name, $subs, $ml, $maintainers, $reviewers, $list_r] | @csv'
     )
 
     echo "$final_line"
