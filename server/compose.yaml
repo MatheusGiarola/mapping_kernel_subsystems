@@ -1,0 +1,17 @@
+name: poc
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Containerfile
+    environment:
+      DATA_DIR: "/data"
+    user: "${UID}:${GID}"
+    ports:
+      - "5005:5000"
+    volumes:
+      - ../data/:/data:z
+      - ./src/:/src:z
+    #stdin_open: true
+    command: flask --app src/app.py run --host=0.0.0.0 --debug
